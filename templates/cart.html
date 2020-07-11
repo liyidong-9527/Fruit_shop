@@ -1,0 +1,149 @@
+{% extends "template.html" %}
+{% block title %}
+    天天生鲜-购物车
+{% endblock %}
+{% block css_js %}
+    <link rel="stylesheet" type="text/css" href="/static/css/reset.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <script src="/static/js/jquery-1.12.4.min.js"></script>
+{% endblock %}
+{% block main %}
+    <div class="search_bar clearfix">
+        <a href="/index" class="logo fl"><img src="/static/images/logo.png"></a>
+        <div class="sub_page_name fl">|&nbsp;&nbsp;&nbsp;&nbsp;购物车</div>
+        <div class="search_con fr">
+            <input type="text" class="input_text fl" name="" placeholder="搜索商品">
+            <input type="button" class="input_btn fr" name="" value="搜索">
+        </div>
+    </div>
+
+    <div class="total_count">全部商品<em>{{ data_len }}</em>件</div>
+    <ul class="cart_list_th clearfix">
+        <li class="col01">商品名称</li>
+        <li class="col02">商品单位</li>
+        <li class="col03">商品价格</li>
+        <li class="col04">数量</li>
+        <li class="col05">小计</li>
+        <li class="col06">操作</li>
+    </ul>
+    {% for datum in data %}
+        <ul class="cart_list_td clearfix">
+            <li class="col01"><input type="checkbox" name="" ></li>
+            <li class="col02"><img src="/static/images/goods/{{ datum.commodity.img_name }}.jpg"></li>
+            <li class="col03">{{ datum.commodity.commodity_name }}<br><em>{{ datum.commodity.commodity_price }}元/{{ datum.commodity.commodity_unit }}</em>
+            </li>
+            <li class="col04">{{ datum.commodity.commodity_unit }}</li>
+            <li class="col05">{{ datum.commodity.commodity_price }}元</li>
+            <li class="col06">
+                <div class="num_add">
+                    <a href="javascript:;" class="add fl">+</a>
+                    <input type="text" class="num_show fl" value="{{ datum.num }}">
+                    <a href="javascript:;" class="minus fl">-</a>
+                </div>
+            </li>
+            <li class="col07">{{ datum.price }}元</li>
+            <li class="col08"><a href="javascript:;" class="del">删除 <p style="display: none">{{ datum.id }}</p></a></li>
+        </ul>
+    {% endfor %}
+
+
+
+
+    <ul class="settlements">
+        <li class="col01"><input type="checkbox" id="check" name=""></li>
+        <li class="col02">全选</li>
+        <li class="col03">合计(不含运费)：<span>¥</span><em id="t_price">42.60</em><br>共计<b id="commo_count"></b>件商品</li>
+        <li class="col04"><a href="/commodity/place_order">去结算</a></li>
+    </ul>
+{% endblock %}
+{% block js %}
+    <script>
+        $(function () {
+            function total_price() {
+                let t_price = 0;
+                $.each($(".col01").children("input:not(#check):checked"), function () {
+                    t_price += Number($(this).parent().nextUntil(".col08")[5].innerHTML.split("元")[0])
+                });
+                $("#t_price").html(t_price.toFixed(2))
+            }
+            function count() {
+                let count = $(".col01").children("input:not(#check):checked").length;
+                $("#commo_count").html(count)
+            }
+            total_price();
+            count();
+            {#全选动作#}
+            $(".col01").children("input:not(#check)").click(function () {
+                var sign = "";
+                {#去除全选框绑定动作，并作foreach循环#}
+                $.each($(".col01").children("input:not(#check)"), function () {
+                    if ($(this).prop("checked")) {
+                        sign = true
+                    } else {
+                        {#若有任一选定框未选中，跳出循环#}
+                        sign = false;
+                        return false;
+                    }
+                });
+                if (sign) {
+                    $("#check").prop("checked", "checked")
+                } else {
+                    $("#check").removeProp("checked")
+                }
+                count();
+                total_price();
+            });
+            $("#check").click(function () {
+
+                let sign = $(this).prop("checked");
+
+                if (sign) {
+                    $(".col01").children("input").prop("checked", "checked");
+
+                } else {
+
+                    $(".col01").children("input").removeAttr("checked")
+                }
+                count();
+                total_price();
+            });
+
+            {# 删除动作#}
+            $(".del").click(function () {
+                $(this).parents("ul").hide();
+                $.ajax({
+                    url: `/commodity/del_comm/${$(this).children("p").text()}`,
+                    type: "post"
+                });
+                total_price();
+            });
+
+            {#数量增加#}
+            $(".add").click(function () {
+                let onum = $(this).next().val();
+                let nnum = Number(onum) + 1;
+                $(this).next().val(nnum);
+                let price = Number($(this).parents(".col06").prev().html().split("元")[0]);
+
+                let t_price = (nnum * price).toFixed(2);
+                $(this).parents(".col06").next().html(t_price + "元");
+                total_price();
+            });
+            {#数量减少#}
+            $(".minus").click(function () {
+                let onum = $(this).prev().val();
+                let nnum = Number(onum) - 1;
+                if (nnum >= 1) {
+                    $(this).prev().val(nnum);
+                    let price = Number($(this).parents(".col06").prev().html().split("元")[0]);
+                    let total_price = (nnum * price).toFixed(2);
+                    $(this).parents(".col06").next().html(total_price + "元")
+                } else {
+                    $(this).prev().val(1);
+                }
+                total_price();
+            });
+
+        })
+    </script>
+{% endblock %}
